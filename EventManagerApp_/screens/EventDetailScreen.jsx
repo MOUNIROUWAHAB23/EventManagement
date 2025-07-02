@@ -5,6 +5,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { addFavorite, removeFavorite } from '../api/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerForEvent } from '../api/api';
 
 export default function EventDetailScreen() {
   const route = useRoute();
@@ -21,6 +22,31 @@ export default function EventDetailScreen() {
       </View>
     );
   }
+
+
+
+  const handleRegister = async () => {
+    const token = await AsyncStorage.getItem('token');
+    const userId = await AsyncStorage.getItem('userId');// Ou récupère l'id utilisateur depuis le token ou le contexte
+    if (!token || !userId) {
+      Alert.alert('Erreur', "Vous devez être connecté.");
+      return;
+    }
+    try {
+      // Inscription à l'événement
+      const res = await registerForEvent(userId, event._id);
+      if (res && res.message === 'Already registered') {
+        Alert.alert('Info', "Vous êtes déjà inscrit à cet événement.");
+        return;
+      }
+      Alert.alert('Succès', "Vous êtes inscrit à l'événement !");
+      navigation.navigate('Tickets'); // Redirige vers la liste des tickets
+    } catch (e) {
+      Alert.alert('Erreur', "Impossible de s'inscrire à l'événement.");
+    }
+  };
+
+
 
   // Gérer le toggle favori (optionnel)
   const handleToggleFavorite = async () => {
@@ -85,7 +111,7 @@ export default function EventDetailScreen() {
         </View>
 
         {/* Map fake */}
-        <TouchableOpacity style={styles.payButton}>
+        <TouchableOpacity style={styles.payButton} onPress={handleRegister}>
           <Image
             source={require('../assets/fake_map.jpg')}
             style={styles.mapImage}

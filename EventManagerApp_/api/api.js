@@ -1,4 +1,3 @@
-// api/api.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BASE_URL = "http://10.0.2.2:5000/api";
@@ -27,10 +26,14 @@ export const getEvents = async () => {
 };
 
 export const registerForEvent = async (userId, eventId) => {
+  const token = await AsyncStorage.getItem('token');
   const response = await fetch(`${BASE_URL}/registration`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, eventId }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ id: userId, eventId }),
   });
   return response.json();
 };
@@ -51,8 +54,6 @@ export const getFavorites = async () => {
 };
 
 export const addFavorite = async (token, eventId) => {
-  console.log('API CALL: POST /favorites', { token, eventId });
-
   try {
     const response = await fetch(`${BASE_URL}/favorites`, {
       method: 'POST',
@@ -64,7 +65,6 @@ export const addFavorite = async (token, eventId) => {
     });
 
     const data = await response.json();
-    console.log('API RESPONSE:', data);
     return data;
   } catch (error) {
     console.error('API ERROR:', error);
@@ -73,8 +73,6 @@ export const addFavorite = async (token, eventId) => {
 };
 
 export const removeFavorite = async (token, eventId) => {
-  console.log('API CALL: DELETE /favorites', { token, eventId });
-
   try {
     const response = await fetch(`${BASE_URL}/favorites/${eventId}`, {
       method: 'DELETE',
@@ -85,13 +83,64 @@ export const removeFavorite = async (token, eventId) => {
     });
 
     const data = await response.json();
-    console.log('API RESPONSE:', data);
     return data;
   } catch (error) {
     console.error('API ERROR:', error);
     return { success: false, message: 'Erreur réseau ou serveur' };
   }
 };
+
+// Fonction pour récupérer les inscriptions/tickets de l'utilisateur
+export const getUserRegistrations = async (userId, type = 'upcoming') => {
+  const token = await AsyncStorage.getItem('token');
+  const response = await fetch(`${BASE_URL}/registration?type=${type}&id=${userId}`, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.json();
+};
+
+export const getNotifications = async () => {
+  const token = await AsyncStorage.getItem('token');
+  const response = await fetch(`${BASE_URL}/notification`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.json();
+};
+
+export const deleteNotification = async (id) => {
+  const token = await AsyncStorage.getItem('token');
+  const response = await fetch(`${BASE_URL}/notification/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.json();
+};
+
+
+// Fonction pour mettre à jour le profil utilisateur
+export const updateUserProfile = async (profile) => {
+  const token = await AsyncStorage.getItem('token');
+  const response = await fetch(`${BASE_URL}/user/me`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(profile),
+  });
+  return response.json();
+};
+
+
 
 export default {
   BASE_URL,
@@ -102,4 +151,9 @@ export default {
   addFavorite,
   removeFavorite,
   getFavorites,
+  getUserRegistrations,
+  getNotifications,
+  deleteNotification,
+  updateUserProfile,
+  getAuthHeaders,
 };

@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { updateUserProfile } from '../api/api';
 
 export default function ProfileScreen() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -17,8 +21,16 @@ export default function ProfileScreen() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        if (res.ok) setUser(data.user || data);
-        else Alert.alert('Erreur', data.message || 'Impossible de charger le profil');
+        if (res.ok) {
+          setUser(data.user || data);
+          setForm({
+            name: (data.user || data).name || '',
+            email: (data.user || data).email || '',
+            password: '',
+          });
+        } else {
+          Alert.alert('Erreur', data.message || 'Impossible de charger le profil');
+        }
       } catch (e) {
         Alert.alert('Erreur', "Impossible de charger le profil");
       }
@@ -26,6 +38,26 @@ export default function ProfileScreen() {
     };
     fetchUser();
   }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload = { name: form.name, email: form.email };
+      if (form.password) payload.password = form.password;
+      const res = await updateUserProfile(payload);
+      if (res.user) {
+        setUser(res.user);
+        setEditMode(false);
+        setForm({ ...form, password: '' });
+        Alert.alert('Succès', 'Profil mis à jour');
+      } else {
+        Alert.alert('Erreur', res.message || 'Erreur lors de la mise à jour');
+      }
+    } catch (e) {
+      Alert.alert('Erreur', "Impossible de mettre à jour le profil");
+    }
+    setSaving(false);
+  };
 
   if (loading) {
     return (
@@ -51,39 +83,80 @@ export default function ProfileScreen() {
           source={require('../assets/event_banner.jpg')}
           style={styles.avatar}
         />
-        <TouchableOpacity style={styles.editContainer}>
-          <Text style={styles.editIcon}>✎</Text>
-          <Text style={styles.editText}>Modifier</Text>
-        </TouchableOpacity>
+        {!editMode && (
+          <TouchableOpacity style={styles.editContainer} onPress={() => setEditMode(true)}>
+            <Text style={styles.editIcon}>✎</Text>
+            <Text style={styles.editText}>Modifier</Text>
+          </TouchableOpacity>
+        )}
       </View>
       {/* Nom */}
-      <Text style={styles.header}>{user.name?.toUpperCase() || ''}</Text>
+      <Text style={styles.header}>{form.name?.toUpperCase() || ''}</Text>
       {/* Formulaire */}
       <View style={styles.inputGroup}>
         <Text style={styles.label}>NOM COMPLET :</Text>
-        <View style={styles.inputBox}>
-          <Text style={styles.inputText}>{user.name}</Text>
-        </View>
+        {editMode ? (
+          <TextInput
+            style={styles.inputBox}
+            value={form.name}
+            onChangeText={v => setForm({ ...form, name: v })}
+            placeholder="Nom"
+            placeholderTextColor="#ccc"
+          />
+        ) : (
+          <View style={styles.inputBox}>
+            <Text style={styles.inputText}>{user.name}</Text>
+          </View>
+        )}
       </View>
       <View style={styles.inputGroup}>
         <Text style={styles.label}>EMAIL :</Text>
-        <View style={styles.inputBox}>
-          <Text style={styles.inputText}>{user.email}</Text>
-        </View>
+        {editMode ? (
+          <TextInput
+            style={styles.inputBox}
+            value={form.email}
+            onChangeText={v => setForm({ ...form, email: v })}
+            placeholder="Email"
+            placeholderTextColor="#ccc"
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+        ) : (
+          <View style={styles.inputBox}>
+            <Text style={styles.inputText}>{user.email}</Text>
+          </View>
+        )}
       </View>
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>MOTS DE PASSE :</Text>
-        <View style={styles.inputBoxRow}>
-          <Text style={styles.inputText}>**********</Text>
-          <TouchableOpacity style={styles.changeBtn}>
-            <Text style={styles.changeText}>Changer</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.label}>MOT DE PASSE :</Text>
+        {editMode ? (
+          <TextInput
+            style={styles.inputBox}
+            value={form.password}
+            onChangeText={v => setForm({ ...form, password: v })}
+            placeholder="Nouveau mot de passe"
+            placeholderTextColor="#ccc"
+            secureTextEntry
+          />
+        ) : (
+          <View style={styles.inputBoxRow}>
+            <Text style={styles.inputText}>**********</Text>
+            <TouchableOpacity style={styles.changeBtn} onPress={() => setEditMode(true)}>
+              <Text style={styles.changeText}>Changer</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-      {/* Gros bouton modifier */}
-      <TouchableOpacity style={styles.modifyBtn}>
-        <Text style={styles.modifyText}>MODIFIER</Text>
-      </TouchableOpacity>
+      {/* Boutons */}
+      {editMode ? (
+        <TouchableOpacity style={styles.modifyBtn} onPress={handleSave} disabled={saving}>
+          <Text style={styles.modifyText}>{saving ? 'Enregistrement...' : 'ENREGISTRER'}</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={styles.modifyBtn} onPress={() => setEditMode(true)}>
+          <Text style={styles.modifyText}>MODIFIER</Text>
+        </TouchableOpacity>
+      )}
     </LinearGradient>
   );
 }
@@ -152,6 +225,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 42,
     justifyContent: 'center',
+    color: '#fff',
   },
   inputBoxRow: {
     flexDirection: 'row',

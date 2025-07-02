@@ -1,16 +1,20 @@
-// screens/TicketDetailScreen.js
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
+import { useRoute, useNavigation } from '@react-navigation/native';
 
-export default function TicketDetailScreen({ navigation }) {
+export default function TicketDetailScreen() {
+  const route = useRoute();
+  const navigation = useNavigation();
+  const ticket = route.params?.ticket;
+  const event = ticket?.eventId || {};
+
   return (
     <LinearGradient colors={['#34185F', '#000000']} style={styles.container}>
-
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="close" size={28} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>MON TICKET</Text>
@@ -20,7 +24,14 @@ export default function TicketDetailScreen({ navigation }) {
       </View>
 
       {/* Event image */}
-      <Image source={require('../assets/event_banner.jpg')} style={styles.eventImage} />
+      <Image
+        source={
+          event.imageUrl
+            ? { uri: event.imageUrl }
+            : require('../assets/event_banner.jpg')
+        }
+        style={styles.eventImage}
+      />
 
       {/* QR text */}
       <View style={{ alignItems: 'center', marginVertical: 16 }}>
@@ -32,10 +43,12 @@ export default function TicketDetailScreen({ navigation }) {
       <Image source={require('../assets/qr_code.png')} style={styles.qrImage} />
 
       {/* Button */}
-      <TouchableOpacity style={styles.viewButton}>
+      <TouchableOpacity
+        style={styles.viewButton}
+        onPress={() => navigation.navigate('Event', { event })}
+      >
         <Text style={styles.viewButtonText}>VOIR L'EVENEMENT</Text>
       </TouchableOpacity>
-
     </LinearGradient>
   );
 }

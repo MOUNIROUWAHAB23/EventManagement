@@ -41,30 +41,34 @@ export default function SearchScreen() {
     }
   }, [search, events]);
 
-  const renderEvent = ({ item }) => (
-    <View style={styles.eventCard}>
-      <Image
-        source={
-          item.imageUrl
-            ? { uri: item.imageUrl }
-            : require('../assets/default_event.png')
-        }
-        style={styles.eventImage}
-      />
-      <TouchableOpacity style={styles.heartBtn}>
-        <Icon name="heart-outline" size={28} color="#fff" />
-      </TouchableOpacity>
-      <Text style={styles.eventTitle}>{item.title}</Text>
-      <View style={styles.eventRow}>
-        <Icon name="calendar-outline" size={16} color="#fff" />
-        <Text style={styles.eventDate}>
-          {item.date
-            ? new Date(item.date).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })
-            : ''}
-        </Text>
-      </View>
+ const renderEvent = ({ item }) => (
+  <TouchableOpacity
+    style={styles.eventCard}
+    onPress={() => navigation.navigate('Event', { event: item })}
+    activeOpacity={0.85}
+  >
+    <Image
+      source={
+        item.imageUrl
+          ? { uri: item.imageUrl }
+          : require('../assets/default_event.png')
+      }
+      style={styles.eventImage}
+    />
+    <TouchableOpacity style={styles.heartBtn}>
+      <Icon name="heart-outline" size={28} color="#fff" />
+    </TouchableOpacity>
+    <Text style={styles.eventTitle}>{item.title}</Text>
+    <View style={styles.eventRow}>
+      <Icon name="calendar-outline" size={16} color="#fff" />
+      <Text style={styles.eventDate}>
+        {item.date
+          ? new Date(item.date).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })
+          : ''}
+      </Text>
     </View>
-  );
+  </TouchableOpacity>
+);
 
   return (
     <LinearGradient colors={['#34185F', '#000']} style={styles.container}>

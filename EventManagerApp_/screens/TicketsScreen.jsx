@@ -1,41 +1,59 @@
-// screens/TicketsScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getUserRegistrations } from '../api/api';
+
+// Mapping des onglets vers les types backend
+const tabToType = {
+  'A venir': 'upcoming',
+  'En attente': 'pending', // adapte si tu as ce type côté backend
+  'Passée': 'past',
+};
 
 export default function TicketsScreen() {
   const [activeTab, setActiveTab] = useState('A venir');
+  const [tickets, setTickets] = useState([]);
+  const navigation = useNavigation();
+  const [userId, setUserId] = useState(null);
 
-  const tickets = [
-    {
-      id: '1',
-      title: 'LOREM IPSUM AZERTY AZERTY',
-      date: 'Jeu 19 juin 2025',
-      image: require('../assets/event_banner.jpg'),
-    },
-    {
-      id: '2',
-      title: 'LOREM IPSUM AZERTY AZERTY',
-      date: 'Jeu 19 juin 2025',
-      image: require('../assets/event_banner.jpg'),
-    },
-    {
-      id: '3',
-      title: 'LOREM IPSUM AZERTY AZERTY',
-      date: 'Jeu 19 juin 2025',
-      image: require('../assets/event_banner.jpg'),
-    },
-  ];
+  useEffect(() => {
+    const fetchTickets = async () => {
+      const storedUserId = await AsyncStorage.getItem('userId');
+      setUserId(storedUserId);
+      if (storedUserId) {
+        const type = tabToType[activeTab] || 'upcoming';
+        const data = await getUserRegistrations(storedUserId, type);
+        setTickets(data);
+      }
+    };
+    fetchTickets();
+  }, [activeTab]);
 
   const renderTicket = ({ item }) => (
-    <View style={styles.ticketCard}>
-      <Image source={item.image} style={styles.ticketImage} />
-      <View style={{ marginLeft: 10 }}>
-        <Text style={styles.ticketTitle}>{item.title}</Text>
-        <Text style={styles.ticketDate}>{item.date}</Text>
-      </View>
+  <TouchableOpacity
+    style={styles.ticketCard}
+    onPress={() => navigation.navigate('TicketDetail', { ticket: item })}
+  >
+    <Image
+      source={
+        item.eventId?.imageUrl
+          ? { uri: item.eventId.imageUrl }
+          : require('../assets/event_banner.jpg')
+      }
+      style={styles.ticketImage}
+    />
+    <View style={{ marginLeft: 10 }}>
+      <Text style={styles.ticketTitle}>{item.eventId?.title || 'Événement'}</Text>
+      <Text style={styles.ticketDate}>
+        {item.eventId?.date
+          ? new Date(item.eventId.date).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })
+          : ''}
+      </Text>
     </View>
-  );
+  </TouchableOpacity>
+);
 
   return (
     <LinearGradient colors={['#34185F', '#000000']} style={styles.container}>
@@ -53,12 +71,12 @@ export default function TicketsScreen() {
       {/* List */}
       <FlatList
         data={tickets}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         renderItem={renderTicket}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 80 }}
+        ListEmptyComponent={<Text style={{ color: '#fff', textAlign: 'center', marginTop: 40 }}>Aucun billet</Text>}
       />
-
     </LinearGradient>
   );
 }

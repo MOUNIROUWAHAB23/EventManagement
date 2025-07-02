@@ -1,20 +1,38 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-
-const notifications = [
-  { id: '1', text: 'Lorem ipsum azerty azerty azerty azerty azerty azerty', canDelete: true },
-  { id: '2', text: 'Lorem ipsum azerty azerty azerty azerty azerty azerty', canDelete: false },
-  { id: '3', text: 'Lorem ipsum azerty azerty azerty azerty azerty azerty', canDelete: false },
-];
+import { getNotifications, deleteNotification } from '../api/api';
 
 export default function NotificationsScreen() {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const data = await getNotifications();
+      setNotifications(data);
+    } catch (e) {
+      Alert.alert('Erreur', "Impossible de charger les notifications");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const handleDelete = async (id) => {
+    await deleteNotification(id);
+    setNotifications(notifications.filter(n => n._id !== id));
+  };
+
   const renderNotif = ({ item }) => (
     <View style={styles.notifRow}>
-      <Text style={styles.notifText} numberOfLines={2}>{item.text}</Text>
-      {item.canDelete ? (
-        <TouchableOpacity style={styles.deleteBtn}>
+      <Text style={styles.notifText} numberOfLines={2}>{item.title ? `${item.title} : ` : ''}{item.message}</Text>
+      {item.userId ? (
+        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item._id)}>
           <Icon name="trash-outline" size={20} color="#fff" />
           <Text style={styles.deleteText}>Supprimer</Text>
         </TouchableOpacity>
@@ -30,12 +48,17 @@ export default function NotificationsScreen() {
         <Icon name="notifications" size={48} color="#FFD600" />
       </View>
       <Text style={styles.header}>NOTIFICATIONS</Text>
-      <FlatList
-        data={notifications}
-        keyExtractor={item => item.id}
-        renderItem={renderNotif}
-        contentContainerStyle={{ paddingBottom: 80 }}
-      />
+      {loading ? (
+        <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={notifications}
+          keyExtractor={item => item._id}
+          renderItem={renderNotif}
+          contentContainerStyle={{ paddingBottom: 80 }}
+          ListEmptyComponent={<Text style={{ color: '#fff', textAlign: 'center', marginTop: 40 }}>Aucune notification</Text>}
+        />
+      )}
     </LinearGradient>
   );
 }

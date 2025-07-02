@@ -18,6 +18,7 @@ export default function LoginScreen({ navigation }) {
       const data = await loginUser(email, password);
       if (data?.token) {
         await AsyncStorage.setItem('token', data.token);  // ✅ Enregistre le token
+        await AsyncStorage.setItem('userId', data.user._id); // <-- AJOUTE CETTE LIGNE
         navigation.replace('HomeStack');
       } else {
         setError(data.message || 'Erreur lors de la connexion');

@@ -64,6 +64,7 @@ export default function App() {
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="Favorites" component={FavoritesScreen} />
         <Stack.Screen name="Event" component={EventDetailScreen} />
+        <Stack.Screen name="Tickets" component={TicketsScreen} />
         <Stack.Screen name="TicketDetail" component={TicketDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
